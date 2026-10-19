@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NetLab</title>
+<meta name="description" content="Medición de red y Wi-Fi: velocidad, latencia, mapa de calor y comparación de informes entre dispositivos.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NetLab">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b141c">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style id="css">
+:root{--bg:#0b141c;--panel:#12212d;--panel2:#18303f;--line:#23404f;--text:#e8f1f5;--muted:#93a9b6;--accent:#2dd4bf;--warn:#f5b942;--bad:#ff7a70;--good:#4ade80;--info:#6cb4ff}
+@media (prefers-color-scheme:light){:root{--bg:#f2f6f8;--panel:#fff;--panel2:#eaf1f4;--line:#d3dfe5;--text:#10202a;--muted:#5a6f7c;--accent:#0f9d94;--warn:#b36b00;--bad:#c0392b;--good:#1f8f4d;--info:#1d6fc4}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,system-ui,"Segoe UI",sans-serif}
+body{padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));max-width:820px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+header img{width:44px;height:44px;border-radius:10px}
+h1{font-size:22px;margin:0}h1 span{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:6px;margin:10px 0 14px}
+.tabs button{flex:1;min-height:44px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:12px;font:inherit;font-weight:600;font-size:14px;padding:0 4px}
+.tabs button.on{background:var(--accent);color:#04201c;border-color:var(--accent)}
+.sec{display:none}.sec.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 8px;color:var(--muted);font-weight:600}
+.btn{min-height:50px;width:100%;border:0;border-radius:12px;background:var(--accent);color:#04201c;font:inherit;font-weight:700;font-size:17px}
+.btn:disabled{opacity:.5}
+.btn.alt{background:var(--panel2);color:var(--text);border:1px solid var(--line);font-weight:600;font-size:15px;min-height:44px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row>*{flex:1;min-width:130px}
+.fld{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+.fld>span{display:block;margin-bottom:3px}
+input[type=text],input[type=number],select{width:100%;min-height:46px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:inherit;padding:0 12px}
+label.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted);min-height:34px}
+.big{font:700 34px/1.1 ui-monospace,Menlo,monospace}
+.unit{font-size:14px;color:var(--muted);font-weight:500}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.kv b{font-family:ui-monospace,Menlo,monospace;font-weight:600;text-align:right}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+.steps{list-style:none;margin:8px 0 0;padding:0;font-size:14px;color:var(--muted)}
+.steps li{padding:2px 0}.steps li.on{color:var(--text)}.steps li.ok::before{content:"✓ ";color:var(--good)}.steps li.run::before{content:"◔ ";color:var(--accent)}.steps li.fail::before{content:"✗ ";color:var(--bad)}.steps li.wait::before{content:"○ "}
+.bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.warn{color:var(--warn)}.bad{color:var(--bad)}.good{color:var(--good)}
+canvas{width:100%;display:block;border-radius:10px;border:1px solid var(--line);background:var(--panel2);touch-action:manipulation}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:600;font-size:12px}
+td.n,th.n{text-align:right;font-family:ui-monospace,Menlo,monospace}
+.pill{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px;margin-right:6px;border:1px solid var(--line);color:var(--muted)}
+.tag.ok{color:var(--good);border-color:var(--good)}.tag.warn{color:var(--warn);border-color:var(--warn)}.tag.bad{color:var(--bad);border-color:var(--bad)}.tag.info{color:var(--info);border-color:var(--info)}
+a{color:var(--accent)}
+.x{border:0;background:none;color:var(--muted);font-size:18px;min-width:34px;min-height:34px}
+.rep{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.rep:last-child{border-bottom:0}
+.rep input[type=checkbox]{width:22px;height:22px;margin-top:3px;flex:0 0 auto}
+.rep .main{flex:1;min-width:0}.rep .t{font-weight:600}.rep .m{font-size:13px;color:var(--muted)}
+.finding{border-left:4px solid var(--line);padding:6px 0 6px 12px;margin:10px 0}
+.finding.ok{border-color:var(--good)}.finding.warn{border-color:var(--warn)}.finding.bad{border-color:var(--bad)}.finding.info{border-color:var(--info)}
+.finding p{margin:4px 0 0;font-size:14px}
+.dlt.good{color:var(--good)}.dlt.bad{color:var(--bad)}
+.scroll{overflow-x:auto}
+.hide{display:none}
+@media print{.tabs,header,.noprint{display:none!important}body{max-width:none}}
+</style>
+</head>
+<body>
+<header>
+  <img src="icons/icon-192.png" alt="">
+  <div><h1>Net<span>Lab</span></h1><div class="sub" id="who">Medición de red y Wi-Fi</div></div>
+</header>
+<div class="tabs" role="tablist">
+  <button class="on" data-t="medir">Medir</button>
+  <button data-t="rooms">Habitaciones</button>
+  <button data-t="inf">Informes</button>
+  <button data-t="info">Acerca</button>
+</div>
+
+<!-- ======== MEDIR ======== -->
+<section class="sec on" id="s-medir">
+  <div class="card">
+    <h2>Esta medición</h2>
+    <div class="row">
+      <label class="fld"><span>Dispositivo</span><input type="text" id="f-dev" autocomplete="off" placeholder="p. ej. iPad de Claudio"></label>
+      <label class="fld"><span>Conexión que usa ahora</span>
+        <select id="f-kind">
+          <option value="wifi|5">Wi-Fi 5 GHz</option>
+          <option value="wifi|2.4">Wi-Fi 2,4 GHz</option>
+          <option value="wifi|6">Wi-Fi 6 GHz</option>
+          <option value="wifi|?">Wi-Fi (no sé la banda)</option>
+          <option value="ethernet|">Cable (Ethernet)</option>
+          <option value="cellular|">Datos móviles</option>
+          <option value="other|">Otra</option>
+        </select></label>
+    </div>
+    <div class="row">
+      <label class="fld"><span>Lugar (opcional)</span><input type="text" id="f-place" autocomplete="off" placeholder="p. ej. Oficina del cliente"></label>
+      <label class="fld"><span>Plan contratado, bajada (Mbps)</span><input type="number" id="f-plan" inputmode="numeric" min="0" placeholder="p. ej. 900"></label>
+      <label class="fld"><span>Subida (Mbps)</span><input type="number" id="f-planup" inputmode="numeric" min="0" placeholder="opcional"></label>
+    </div>
+    <button class="btn" id="go">Iniciar medición</button>
+    <div class="bar"><i id="bar"></i></div>
+    <ul class="steps" id="steps"></ul>
+    <div class="note">Consume unos 100 a 300 MB de datos. Si usas datos móviles, tenlo en cuenta. Mantén la pantalla encendida.</div>
+  </div>
+  <div id="res"></div>
+</section>
+
+<!-- ======== HABITACIONES ======== -->
+<section class="sec" id="s-rooms">
+  <div class="card">
+    <h2>Plano (opcional)</h2>
+    <div class="row"><input type="file" id="plan-file" accept="image/*" style="min-height:44px;font-size:14px"><button class="btn alt" id="plan-clear" style="flex:0 0 auto;width:auto;padding:0 16px">Quitar</button></div>
+    <div class="note">Elige una foto o captura del plano. Toca en él el lugar donde estás y luego mide: cada punto se colorea según la velocidad.</div>
+    <canvas id="plan" style="margin-top:10px;display:none"></canvas>
+    <label class="fld" style="margin-top:10px"><span>Color según</span>
+      <select id="metric"><option value="down">Velocidad de bajada</option><option value="up">Velocidad de subida</option><option value="lat">Latencia</option></select></label>
+  </div>
+  <div class="card">
+    <h2>Medir en este lugar</h2>
+    <input type="text" id="room-name" placeholder="Nombre del lugar (p. ej. Dormitorio)" autocomplete="off">
+    <div style="height:8px"></div>
+    <button class="btn" id="room-go">Medir y guardar</button>
+    <div class="bar"><i id="room-bar"></i></div>
+    <div class="note" id="room-status">Dura unos 20 segundos. Quédate quieto en el lugar.</div>
+  </div>
+  <div class="card">
+    <h2>Mediciones guardadas</h2>
+    <div id="room-list"><div class="note">Aún no hay mediciones.</div></div>
+    <div class="row" style="margin-top:10px"><button class="btn alt" id="room-csv">CSV</button><button class="btn alt" id="room-png">Mapa (PNG)</button><button class="btn alt" id="room-clear">Borrar todo</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn alt" id="proj-save">Guardar proyecto</button><button class="btn alt" id="proj-open">Abrir proyecto</button><input type="file" id="proj-file" accept="application/json,.json" class="hide"></div>
+    <div class="note">«Guardar proyecto» crea un archivo con el plano y las mediciones. Consérvalo: si Safari borra los datos del sitio, puedes recuperarlo con «Abrir proyecto».</div>
+  </div>
+</section>
+
+<!-- ======== INFORMES ======== -->
+<section class="sec" id="s-inf">
+  <div class="card">
+    <h2>Informes guardados</h2>
+    <div id="rep-list"><div class="note">Aún no hay informes. Se guardan solos al terminar una medición.</div></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="cmp-go">Comparar seleccionados</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn alt" id="rep-export">Exportar seleccionados</button>
+      <button class="btn alt" id="rep-import">Importar informes</button>
+      <input type="file" id="rep-file" accept="application/json,.json" multiple class="hide">
+    </div>
+    <div class="note" id="rep-status">Marca dos o más informes para compararlos, también si vienen de otros dispositivos. Para traer informes de otro equipo, expórtalos allí e impórtalos aquí. También se aceptan los de NetLab para Mac 1.7.</div>
+  </div>
+  <div id="view"></div>
+</section>
+
+<!-- ======== ACERCA ======== -->
+<section class="sec" id="s-info">
+  <div class="card">
+    <h2>Qué mide</h2>
+    <p style="margin:0 0 8px"><b>Velocidad de bajada y subida</b> hacia servidores de Cloudflare, con varias conexiones en paralelo y descartando el primer segundo, que es de arranque lento.</p>
+    <p style="margin:0 0 8px"><b>Latencia y jitter</b> hacia Internet, de dos formas: un mensaje por segundo y mensajes seguidos. Si el ritmo rápido da bastante menos, el Wi-Fi ahorra energía entre mensajes espaciados; es normal.</p>
+    <p style="margin:0 0 8px"><b>Latencia bajo carga:</b> cuánto sube la latencia mientras se descarga o se sube. Un aumento grande indica que el router acumula demasiada cola («bufferbloat»).</p>
+    <p style="margin:0"><b>DNS por HTTPS:</b> tiempo de respuesta de dos servicios DNS públicos. Mide sobre todo el viaje de red, no el DNS de tu router.</p>
+  </div>
+  <div class="card">
+    <h2>Qué no puede hacer</h2>
+    <p style="margin:0">Un navegador no puede leer la potencia de señal, el canal ni las redes cercanas, ni hacer ping a equipos de la red local, escanear puertos o trazar rutas: iOS y los navegadores no lo permiten. Para eso se usa NetLab en el Mac. Además, en equipos antiguos el propio navegador puede limitar las velocidades muy altas (de varios cientos de Mbps).</p>
+  </div>
+  <div class="card">
+    <h2>Comparar dispositivos</h2>
+    <p style="margin:0">Mide con el mismo plan y, si es posible, en el mismo lugar y a la misma hora. Si un equipo rinde claramente menos que otro en la misma red, el límite está en ese equipo; si todos rinden parecido, está en la red o en la línea. Una sola medición por equipo es una pista, no una prueba: repite para confirmar.</p>
+  </div>
+  <div class="card">
+    <h2>Privacidad</h2>
+    <p style="margin:0">Todo se guarda solo en este dispositivo (en el navegador). No hay cuenta ni servidor propio. Las pruebas se hacen contra Cloudflare, que verá la dirección IP de tu conexión, como cualquier sitio que visites.</p>
+  </div>
+  <div class="card">
+    <h2>Instalar como app</h2>
+    <p style="margin:0">En Safari: botón Compartir → <b>Añadir a pantalla de inicio</b>. Después se abre como una app y funciona sin conexión (las mediciones de Internet, por supuesto, necesitan conexión).</p>
+  </div>
+  <div class="card"><div class="kv"><span>Versión</span><b>web 1.0</b><span>Navegador</span><b id="i-ua">–</b><span>Almacenamiento</span><b id="i-st">–</b></div></div>
+</section>
+
+<script>
+"use strict";
+const VERSION = "web 1.0";
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fmt = (v, d = 1) => v == null || isNaN(v) ? "–" : Number(v).toFixed(d).replace(".", ",");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = { get(k, def) { try { const v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); } catch (e) { return def; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } } };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pct = (s, p) => { if (!s.length) return null; const i = (s.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+function stats(vals) {
+  const n = vals.length, ok = vals.filter(v => v != null), s = [...ok].sort((a, b) => a - b);
+  if (!ok.length) return { n, ok: 0, loss: 100 };
+  let j = 0; for (let i = 1; i < ok.length; i++) j += Math.abs(ok[i] - ok[i - 1]);
+  return { n, ok: ok.length, loss: (n - ok.length) / n * 100, min: s[0], med: pct(s, .5), p95: pct(s, .95), max: s[s.length - 1], jit: ok.length > 1 ? j / (ok.length - 1) : 0 };
+}
+function saveBlob(name, blob) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "").replace(/^(\d{8})(\d{4})$/, "$1-$2");
+const fmtDate = ts => { const d = new Date(ts); return isNaN(d) ? "" : d.toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); };
+
+/* ---------- pestañas ---------- */
+function showTab(t) {
+  $$(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.t === t));
+  $$(".sec").forEach(s => s.classList.toggle("on", s.id === "s-" + t));
+  if (t === "rooms") drawPlan();
+  if (t === "inf") renderReports();
+}
+$$(".tabs button").forEach(b => b.onclick = () => showTab(b.dataset.t));
+
+/* ---------- dispositivo ---------- */
+function guessDevice() {
+  const ua = navigator.userAgent || "", touch = navigator.maxTouchPoints > 1;
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && touch)) return "iPad";
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? "Teléfono Android" : "Tablet Android";
+  if (/Windows/.test(ua)) return "PC con Windows";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Linux/.test(ua)) return "Linux";
+  return "Dispositivo";
+}
+const kindName = r => r.kind === "wifi" ? "Wi-Fi" + (r.band && r.band !== "?" ? " " + String(r.band).replace(/ ?GHz/i, "").replace(".", ",") + " GHz" : "") : r.kind === "ethernet" ? "Cable" : r.kind === "cellular" ? "Datos móviles" : "Otra conexión";
+$("#f-dev").value = store.get("nl_device", "") || guessDevice();
+$("#f-plan").value = store.get("nl_plan_down", "") || "";
+$("#f-planup").value = store.get("nl_plan_up", "") || "";
+$("#f-kind").value = store.get("nl_kind", "wifi|5");
+$("#f-place").value = store.get("nl_place", "");
+$("#i-ua").textContent = (navigator.userAgent.match(/(Version\/[\d.]+|CriOS\/[\d.]+|Chrome\/[\d.]+|Firefox\/[\d.]+)/) || [""])[0] || "–";
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(ok => { $("#i-st").textContent = ok ? "persistente" : "normal"; }); else $("#i-st").textContent = "normal"; } catch (e) { $("#i-st").textContent = "normal"; }
+
+/* ---------- mediciones ---------- */
+let wake = null;
+async function keepAwake(on) { try { if (on && navigator.wakeLock) wake = await navigator.wakeLock.request("screen"); else if (wake) { await wake.release(); wake = null; } } catch (e) { } }
+async function timedFetch(url, opts = {}, timeout = 3500) {
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), timeout), t0 = performance.now();
+  try { const r = await fetch(url, { cache: "no-store", signal: ac.signal, ...opts }); await r.arrayBuffer(); return r.ok ? performance.now() - t0 : null; }
+  catch (e) { return null; } finally { clearTimeout(t); }
+}
+const rnd = () => Math.random().toString(36).slice(2);
+const netPing = () => "https://speed.cloudflare.com/__down?bytes=0&r=" + rnd();
+const netDown = n => "https://speed.cloudflare.com/__down?bytes=" + n + "&r=" + rnd();
+const netUp = () => "https://speed.cloudflare.com/__up?r=" + rnd();
+async function latency(n, gap, onTick) {
+  const v = []; await timedFetch(netPing()); // la primera solicitud abre la conexión y se descarta
+  for (let i = 0; i < n; i++) { v.push(await timedFetch(netPing())); if (onTick) onTick(i + 1, n); if (gap) await sleep(gap); }
+  return stats(v);
+}
+/* velocidad: varias conexiones en paralelo; se descarta el primer segundo; mide además la latencia bajo carga */
+async function throughput(kind, seconds, streams, size, onTick) {
+  const t0 = performance.now(), end = t0 + seconds * 1000, warm = t0 + 1000;
+  let total = 0, warmBytes = null, warmT = null, failed = 0, stop = false;
+  const loaded = [];
+  const mark = () => { const now = performance.now(); if (warmBytes == null && now >= warm) { warmBytes = total; warmT = now; } if (onTick) onTick(Math.min(1, (now - t0) / (seconds * 1000))); };
+  const body = kind === "up" ? new Blob([new Uint8Array(size)]) : null;
+  const worker = async () => {
+    while (performance.now() < end && !stop) {
+      try {
+        if (kind === "down") {
+          const r = await fetch(netDown(size), { cache: "no-store" });
+          if (!r.ok) throw new Error("http " + r.status);
+          const rd = r.body.getReader();
+          for (;;) { const { done, value } = await rd.read(); if (done) break; total += value.length; mark(); if (performance.now() >= end || stop) { rd.cancel(); break; } }
+        } else {
+          const r = await fetch(netUp(), { method: "POST", body, cache: "no-store" });
+          if (!r.ok) throw new Error("http " + r.status);
+          await r.arrayBuffer(); total += size; mark();
+        }
+      } catch (e) { failed++; if (failed > 6) stop = true; await sleep(150); }
+    }
+  };
+  const prober = async () => { await sleep(1200); while (performance.now() < end - 300 && !stop) { const ms = await timedFetch(netPing(), {}, 4000); if (ms != null) loaded.push(ms); await sleep(250); } };
+  const tick = setInterval(mark, 200);
+  await Promise.all([...Array.from({ length: streams }, worker), prober()]);
+  clearInterval(tick);
+  const t1 = performance.now(); let mbps = null;
+  if (!(stop && total === 0)) mbps = warmBytes != null && t1 - warmT > 1000 ? (total - warmBytes) * 8 / ((t1 - warmT) / 1000) / 1e6 : total * 8 / ((t1 - t0) / 1000) / 1e6;
+  return { mbps, loaded: stats(loaded) };
+}
+/* DNS por HTTPS (JSON): tiempo de respuesta de dos servicios públicos */
+async function dohTimes(n) {
+  const names = ["cloudflare.com", "wikipedia.org", "google.com", "mozilla.org", "apple.com", "github.com", "debian.org", "iana.org"];
+  const one = async (base, hdr) => { const v = []; for (let i = 0; i < n; i++) { v.push(await timedFetch(`${base}?name=${names[i % names.length]}&type=A&r=${rnd()}`, { headers: hdr }, 3500)); } return stats(v); };
+  const [cf, g] = [await one("https://cloudflare-dns.com/dns-query", { accept: "application/dns-json" }), await one("https://dns.google/resolve", {})];
+  return { cf, g };
+}
+
+/* ---------- informe de una medición ---------- */
+const kindLabel = (k, b) => kindName({ kind: k, band: b });
+function buildReport(R, ctx) {
+  const dn = R.dns ? [R.dns.cf, R.dns.g].filter(s => s && s.ok).map(s => s.med) : [];
+  return {
+    id: uid(), app: "netlab-web", v: 1, ts: new Date().toISOString(), device: ctx.device, place: ctx.place || "", title: ctx.place || "",
+    kind: ctx.kind, band: ctx.band || null, plan: { down: ctx.planDown || null, up: ctx.planUp || null },
+    down: R.down, up: R.up, lat: R.latFast && R.latFast.ok ? R.latFast.med : null, latSlow: R.latSlow && R.latSlow.ok ? R.latSlow.med : null,
+    inetMed: R.latSlow && R.latSlow.ok ? R.latSlow.med : null, jit: R.latFast && R.latFast.ok ? R.latFast.jit : null, p95: R.latFast && R.latFast.ok ? R.latFast.p95 : null,
+    loss: R.latFast ? R.latFast.loss : null, bloat: R.bloat, dns: dn.length ? Math.min(...dn) : null,
+    ua: (navigator.userAgent.match(/(Version\/[\d.]+|CriOS\/[\d.]+|Chrome\/[\d.]+|Firefox\/[\d.]+)/) || [""])[0]
+  };
+}
+function singleFindings(r) {
+  const F = [], add = (lvl, t, d) => F.push({ lvl, t, d }), plan = r.plan && r.plan.down ? +r.plan.down : null;
+  if (r.down != null && plan) {
+    const pc = r.down / plan * 100;
+    if (r.kind === "ethernet") add(pc >= 80 ? "ok" : pc >= 50 ? "warn" : "bad", pc >= 80 ? "La conexión por cable rinde cerca del plan" : "Por cable no se alcanza el plan", `Bajada de ${fmt(r.down, 0)} Mbps, el ${fmt(pc, 0)} % del plan de ${fmt(plan, 0)} Mbps.${pc < 80 ? " Por cable el Wi-Fi no influye: conviene revisar el cable, el adaptador, el router y, si persiste, la línea con la operadora." : ""}`);
+    else add(pc >= 60 ? "ok" : pc < 25 ? "warn" : "info", `Bajada al ${fmt(pc, 0)} % del plan`, `${fmt(r.down, 0)} Mbps frente a ${fmt(plan, 0)} Mbps contratados. Por Wi-Fi es normal no llegar al plan completo; la referencia fiable es una medición por cable, que puedes comparar en la pestaña Informes.`);
+  } else if (r.down != null) add("info", "Sin plan para comparar", "Indica el plan contratado en la pestaña Medir para ver qué porcentaje alcanzas.");
+  if (r.lat != null) add(r.lat < 40 ? "ok" : r.lat < 80 ? "warn" : "bad", r.lat < 40 ? "Latencia buena" : "Latencia alta", `Mediana de ${fmt(r.lat)} ms hacia Cloudflare con mensajes seguidos${r.latSlow != null && r.latSlow - r.lat >= 3 && r.lat < r.latSlow * .8 ? `; con un mensaje por segundo fue de ${fmt(r.latSlow)} ms (el Wi-Fi ahorra energía entre mensajes espaciados)` : ""}.`);
+  if (r.jit != null && r.jit >= 15) add("warn", "Jitter alto", `El jitter fue de ${fmt(r.jit)} ms. Afecta llamadas y juegos; por Wi-Fi puede deberse a interferencia o a poca señal.`);
+  if (r.loss != null && r.loss >= 2) add("bad", "Hay pérdida de paquetes", `Se perdió el ${fmt(r.loss, 1)} % de las solicitudes de latencia.`);
+  if (r.bloat != null && r.bloat >= 100) add("warn", "Latencia muy alta bajo carga", `Al descargar o subir, la latencia aumentó unos ${fmt(r.bloat, 0)} ms. Sugiere acumulación de cola en el router (bufferbloat); activar SQM o QoS, si el router lo permite, lo mejora.`);
+  else if (r.bloat != null && r.bloat <= 30) add("ok", "Latencia estable bajo carga", `Aumento de ${fmt(r.bloat, 0)} ms mientras se usa el máximo de la conexión.`);
+  add("info", "Alcance", "Es una sola medición contra servidores de Cloudflare desde el navegador. Para confirmar un problema, repite la prueba y compara con otros dispositivos.");
+  return F;
+}
+
+/* ---------- ejecución ---------- */
+let running = false;
+function card(title, inner) { return `<div class="card"><h2>${title}</h2>${inner}</div>`; }
+const mbps = v => v == null ? '<span class="big warn">–</span>' : `<span class="big">${fmt(v, v >= 100 ? 0 : 1)}</span> <span class="unit">Mbps</span>`;
+function showResult(r, extra) {
+  const f = singleFindings(r), lbl = { ok: "Bien", warn: "Atención", bad: "Problema", info: "Info" };
+  $("#res").innerHTML = card("Resultado", `<div class="kv"><span>Dispositivo</span><b>${esc(r.device)}</b><span>Conexión</span><b>${esc(kindName(r))}</b></div>
+    <div class="grid2" style="margin-top:10px"><div><div class="unit">Bajada</div>${mbps(r.down)}</div><div><div class="unit">Subida</div>${mbps(r.up)}</div></div>
+    <div class="kv" style="margin-top:10px"><span>Latencia (mensajes seguidos)</span><b>${fmt(r.lat)} ms</b><span>Latencia (1 por segundo)</span><b>${fmt(r.latSlow)} ms</b><span>Jitter</span><b>${fmt(r.jit)} ms</b><span>Pérdida</span><b>${fmt(r.loss, 0)} %</b><span>Aumento bajo carga</span><b>${r.bloat == null ? "–" : fmt(r.bloat, 0) + " ms"}</b><span>DNS por HTTPS</span><b>${r.dns == null ? "–" : fmt(r.dns, 0) + " ms"}</b></div>`) +
+    card("Lectura", f.map(x => `<div class="finding ${x.lvl}"><span class="tag ${x.lvl}">${lbl[x.lvl]}</span><b>${esc(x.t)}</b><p>${esc(x.d)}</p></div>`).join("")) +
+    `<div class="card"><div class="note" style="margin:0 0 8px">${extra || ""}</div><div class="row"><button class="btn alt" id="r-view">Ver en Informes</button></div></div>`;
+  const b = $("#r-view"); if (b) b.onclick = () => showTab("inf");
+}
+$("#go").onclick = async () => {
+  if (running) return;
+  const planDown = +$("#f-plan").value || null, planUp = +$("#f-planup").value || null, [kind, band] = $("#f-kind").value.split("|"), device = $("#f-dev").value.trim() || guessDevice(), place = $("#f-place").value.trim();
+  store.set("nl_device", device); store.set("nl_plan_down", planDown); store.set("nl_plan_up", planUp); store.set("nl_kind", $("#f-kind").value); store.set("nl_place", place);
+  running = true; $("#go").disabled = true; await keepAwake(true); $("#res").innerHTML = "";
+  const R = {}, S = [
+    { id: "lat", label: "Latencia hacia Internet", w: 12 }, { id: "dns", label: "DNS por HTTPS", w: 4 },
+    { id: "down", label: "Velocidad de bajada", w: 9 }, { id: "up", label: "Velocidad de subida", w: 7 }
+  ];
+  const total = S.reduce((a, s) => a + s.w, 0); let done = 0;
+  $("#steps").innerHTML = S.map(s => `<li id="st-${s.id}" class="wait">${s.label} <span></span></li>`).join("");
+  const mark = (id, cls, txt) => { const e = $("#st-" + id); e.className = cls + " on"; e.lastElementChild.textContent = txt || ""; };
+  const bar = f => $("#bar").style.width = Math.min(100, (done + f) / total * 100) + "%"; bar(0);
+  const run = async (id, fn) => { const s = S.find(x => x.id === id); mark(id, "run", "en curso…"); try { await fn(s); mark(id, "ok", ""); } catch (e) { mark(id, "fail", e.message || "falló"); } done += s.w; bar(0); };
+  await run("lat", async s => {
+    const slow = await latency(8, 600, (i, n) => bar(s.w * i / n * 0.4));
+    if (!slow.ok) throw new Error("sin acceso a Internet desde el navegador");
+    R.latSlow = slow; R.latFast = await latency(40, 0, (i, n) => bar(s.w * (0.4 + 0.6 * i / n)));
+  });
+  await run("dns", async s => { R.dns = await dohTimes(6); bar(s.w); });
+  await run("down", async s => { const o = await throughput("down", 8, 4, 25e6, f => bar(s.w * f)); R.down = o.mbps; R.loadD = o.loaded; if (R.down == null) throw new Error("sin respuesta"); });
+  await run("up", async s => { const o = await throughput("up", 6, 4, 2e6, f => bar(s.w * f)); R.up = o.mbps; R.loadU = o.loaded; if (R.up == null) throw new Error("sin respuesta"); });
+  const idle = R.latFast && R.latFast.ok ? R.latFast.med : null, ld = [R.loadD, R.loadU].filter(s => s && s.ok && idle != null).map(s => Math.max(0, s.med - idle));
+  R.bloat = ld.length ? Math.max(...ld) : null;
+  $("#bar").style.width = "100%";
+  const rep = buildReport(R, { device, place, kind, band: band === "?" ? null : band ? (band + " GHz").replace(".", ",") : null, planDown, planUp });
+  if (rep.down == null && rep.up == null && rep.lat == null) { $("#res").innerHTML = card("No se pudo medir", `<p style="margin:0">El navegador no logró comunicarse con los servidores de prueba. Comprueba que haya conexión a Internet y que ninguna extensión, VPN o filtro de contenido bloquee <b>speed.cloudflare.com</b>.</p>`); }
+  else { const all = store.get("nl_reports", []); all.push(rep); const okSave = store.set("nl_reports", all); showResult(rep, okSave ? "Informe guardado en este dispositivo." : "No se pudo guardar el informe (almacenamiento lleno o bloqueado)."); }
+  await keepAwake(false); running = false; $("#go").disabled = false; $("#go").textContent = "Medir de nuevo";
+};
+
+/* ---------- informes, importación y exportación ---------- */
+let reports = store.get("nl_reports", []);
+const sel = new Set();
+function reload() { reports = store.get("nl_reports", []); }
+function normalizeReport(o) {
+  if (!o || typeof o !== "object") return null;
+  const S = o.summary && typeof o.summary === "object" ? o.summary : o;
+  if (!S.ts || (!("down" in S) && !("kind" in S))) return null;
+  const kind = S.kind === "otro" ? "other" : (S.kind || "other");
+  return {
+    id: uid(), app: S.app || "netlab-mac", v: 1, ts: S.ts, device: S.device || (S.app === "netlab-web" ? "Dispositivo" : "Mac"), place: S.place || S.title || "", title: S.title || "",
+    kind, band: S.band || null, plan: S.plan || {}, down: S.down ?? null, up: S.up ?? null, lat: S.lat ?? S.inetMed ?? null, latSlow: S.latSlow ?? S.inetMed ?? null, inetMed: S.inetMed ?? null,
+    gwMed: S.gwMed ?? null, jit: S.jit ?? null, p95: S.p95 ?? null, loss: S.loss ?? null, bloat: S.bloat ?? null, dns: S.dns ?? null, rssi: S.rssi ?? null, snr: S.snr ?? null, txAvg: S.txAvg ?? null,
+    channel: S.channel ?? null, link: S.link ?? null, spikes: S.spikes ?? null, mtu: S.mtu ?? null, ua: S.ua || ""
+  };
+}
+function importObjects(o) {
+  const list = Array.isArray(o) ? o : Array.isArray(o.reports) ? o.reports : [o];
+  const have = new Set(reports.map(r => r.ts + "|" + r.device + "|" + r.down)), added = [];
+  list.forEach(x => { const n = normalizeReport(x); if (n && !have.has(n.ts + "|" + n.device + "|" + n.down)) { added.push(n); have.add(n.ts + "|" + n.device + "|" + n.down); } });
+  return added;
+}
+$("#rep-import").onclick = () => $("#rep-file").click();
+$("#rep-file").onchange = async e => {
+  const files = [...e.target.files]; e.target.value = ""; if (!files.length) return;
+  let added = [], bad = 0;
+  for (const f of files) { try { const o = JSON.parse(await f.text()); const a = importObjects(o); if (!a.length && !(o && (o.ts || o.summary || o.reports || Array.isArray(o)))) bad++; added.push(...a); } catch (err) { bad++; } }
+  if (added.length) { reports.push(...added); store.set("nl_reports", reports); added.forEach(r => sel.add(r.id)); }
+  renderReports();
+  $("#rep-status").innerHTML = added.length ? `Se importaron ${added.length} informe(s)${bad ? `; ${bad} archivo(s) no se pudieron leer` : ""}.` : `<span class="bad">No se importó nada${bad ? ": el archivo no parece un informe de NetLab" : " (ya estaban guardados)"}.</span>`;
+};
+function pickedReports() { return reports.filter(r => sel.has(r.id)); }
+$("#rep-export").onclick = () => {
+  const list = sel.size ? pickedReports() : reports;
+  if (!list.length) { $("#rep-status").textContent = "No hay informes para exportar."; return; }
+  saveBlob(`NetLab-informes-${stamp()}.json`, new Blob([JSON.stringify({ netlab: "reports", v: 1, reports: list }, null, 1)], { type: "application/json" }));
+  $("#rep-status").textContent = `Exportados ${list.length} informe(s). Impórtalos en otro dispositivo con «Importar informes».`;
+};
+function renderReports() {
+  reload();
+  const box = $("#rep-list");
+  if (!reports.length) { box.innerHTML = '<div class="note">Aún no hay informes. Se guardan solos al terminar una medición.</div>'; return; }
+  const rs = [...reports].sort((a, b) => a.ts < b.ts ? 1 : -1);
+  box.innerHTML = rs.map(r => `<div class="rep"><input type="checkbox" data-id="${esc(r.id)}" ${sel.has(r.id) ? "checked" : ""} aria-label="Seleccionar"><div class="main"><div class="t">${esc(r.device)} · ${esc(kindName(r))}</div><div class="m">${esc(fmtDate(r.ts))}${r.place ? " · " + esc(r.place) : ""}${r.app === "netlab-mac" ? " · NetLab Mac" : ""}</div><div class="m">${r.down == null ? "–" : "↓ " + fmt(r.down, 0)} · ${r.up == null ? "–" : "↑ " + fmt(r.up, 0)} Mbps · ${r.lat == null ? "–" : fmt(r.lat, 0) + " ms"}${r.plan && r.plan.down && r.down != null ? ` · ${fmt(r.down / r.plan.down * 100, 0)} % del plan` : ""}</div></div><button class="x" data-del="${esc(r.id)}" aria-label="Borrar">✕</button></div>`).join("");
+  $$("#rep-list input[type=checkbox]").forEach(c => c.onchange = () => { c.checked ? sel.add(c.dataset.id) : sel.delete(c.dataset.id); });
+  $$("#rep-list .x").forEach(b => b.onclick = () => { const r = reports.find(x => x.id === b.dataset.del); if (!r || !confirm(`¿Borrar el informe de ${r.device} (${fmtDate(r.ts)})?`)) return; reports = reports.filter(x => x.id !== r.id); sel.delete(r.id); store.set("nl_reports", reports); renderReports(); });
+}
+
+/* ---------- diagnóstico y comparación ---------- */
+const minutes = (a, b) => Math.abs(new Date(a) - new Date(b)) / 60000;
+const spanText = m => m < 90 ? `${fmt(m, 0)} minutos` : m < 60 * 36 ? `${fmt(m / 60, 0)} horas` : `${fmt(m / 1440, 0)} días`;
+const bandNum = r => { const b = String(r.band || ""); return /2/.test(b) ? 2.4 : /6/.test(b) ? 6 : /5/.test(b) ? 5 : null; };
+function diagnose(rs) {
+  const F = [], add = (lvl, t, d) => F.push({ lvl, t, d }), f = fmt;
+  const lab = r => `${r.device} (${kindName(r)})`, wd = rs.filter(r => r.down != null);
+  const plan = Math.max(0, ...rs.map(r => r.plan && r.plan.down ? +r.plan.down : 0)) || null;
+  const cables = wd.filter(r => r.kind === "ethernet"), wifis = wd.filter(r => r.kind === "wifi");
+  const tsAll = rs.map(r => +new Date(r.ts)), span = (Math.max(...tsAll) - Math.min(...tsAll)) / 60000;
+  if (span > 90) add("info", "Los informes se hicieron con tiempo de diferencia", `Entre el primero y el último pasaron ${spanText(span)}. La velocidad por Wi-Fi y la carga de la red cambian durante el día, así que parte de las diferencias puede ser ese cambio y no el dispositivo.`);
+  /* 1. cable como referencia de la línea */
+  const bestCable = cables.length ? cables.reduce((a, b) => b.down > a.down ? b : a) : null, bestWifi = wifis.length ? wifis.reduce((a, b) => b.down > a.down ? b : a) : null;
+  if (bestCable && plan) {
+    const pc = bestCable.down / plan * 100;
+    if (pc >= 80) add("ok", "La línea entrega lo contratado", `Por cable, ${bestCable.device} midió ${f(bestCable.down, 0)} Mbps, el ${f(pc, 0)} % del plan de ${f(plan, 0)} Mbps. La operadora y el router no parecen ser el límite.`);
+    else add(pc >= 50 ? "warn" : "bad", "Por cable no se alcanza el plan", `${bestCable.device} midió ${f(bestCable.down, 0)} Mbps, el ${f(pc, 0)} % del plan de ${f(plan, 0)} Mbps. Como el Wi-Fi no interviene, el límite está en el cable, el adaptador del equipo, el router o la línea. Prueba otro cable y otro equipo por cable; si el resultado se repite, es motivo para reclamar a la operadora.`);
+  } else if (!bestCable && wifis.length && plan) {
+    const pc = bestWifi.down / plan * 100;
+    if (pc < 60) add("info", "Falta una medición por cable", `La mejor medición por Wi-Fi llegó al ${f(pc, 0)} % del plan. Sin una medición por cable no se puede saber si el límite es el Wi-Fi o la línea: mide un equipo conectado por cable y vuelve a comparar.`);
+  }
+  /* 2. Wi-Fi frente a cable */
+  if (bestCable && bestWifi) {
+    const ratio = bestCable.down / bestWifi.down, d = Math.max(bestCable.down - bestWifi.down, 0);
+    if (ratio >= 1.3) add("info", "El Wi-Fi limita la velocidad", `Por cable ${f(bestCable.down, 0)} Mbps y por Wi-Fi ${f(bestWifi.down, 0)} Mbps (${bestWifi.device}): el Wi-Fi pierde unos ${f(d, 0)} Mbps. La línea rinde más de lo que el Wi-Fi deja pasar; lo que ayuda es mejorar el Wi-Fi (ubicación, canal, banda de 5 GHz, un router o punto de acceso más moderno).`);
+    else if (ratio >= .85) add("info", "Wi-Fi y cable rinden parecido", `Cable ${f(bestCable.down, 0)} Mbps y Wi-Fi ${f(bestWifi.down, 0)} Mbps: el límite no está en el Wi-Fi. Cambiar el Wi-Fi aportaría poco.`);
+    else add("warn", "Por cable rinde menos que por Wi-Fi", `Es poco habitual: revisa el cable y el adaptador del equipo por cable, y repite la medición.`);
+  }
+  /* 3. diferencias entre dispositivos en la misma red */
+  const near = wifis.filter(r => true);
+  if (near.length >= 2) {
+    const hi = near.reduce((a, b) => b.down > a.down ? b : a), lo = near.reduce((a, b) => b.down < a.down ? b : a), gap = minutes(hi.ts, lo.ts);
+    if (hi.id !== lo.id) {
+      const ratio = hi.down / lo.down, sameDev = hi.device === lo.device;
+      if (gap > 60) add("info", "No se pueden atribuir las diferencias a un equipo", `${lab(hi)} y ${lab(lo)} se midieron con ${spanText(gap)} de diferencia, y por Wi-Fi la velocidad cambia con la hora y con el lugar. Para comparar equipos, mídelos uno tras otro, en el mismo lugar.`);
+      else if (ratio >= 1.4) {
+        const bh = bandNum(hi), bl = bandNum(lo), band = bh && bl && bh !== bl ? ` Además usaron bandas distintas (${bh === 2.4 ? "2,4" : bh} GHz frente a ${bl === 2.4 ? "2,4" : bl} GHz); la banda de 2,4 GHz es bastante más lenta.` : "";
+        add("warn", sameDev ? "El mismo equipo rindió distinto" : `${lo.device} rinde menos que ${hi.device}`, `Con pocos minutos de diferencia, ${lab(hi)} midió ${f(hi.down, 0)} Mbps y ${lab(lo)} ${f(lo.down, 0)} Mbps (un ${f((1 - 1 / ratio) * 100, 0)} % menos).${band} ${sameDev ? "Revisa si cambió el lugar o la banda entre ambas mediciones." : "Como la red es la misma, el límite parece estar en el equipo más lento (generación de Wi-Fi, antena, ahorro de energía) o en su ubicación, no en la red."} Confirma repitiendo con ambos equipos en el mismo punto.`);
+      } else if (ratio < 1.2) add("ok", "Los equipos rinden parecido", `${lab(hi)} ${f(hi.down, 0)} Mbps y ${lab(lo)} ${f(lo.down, 0)} Mbps. Si el resultado no es el esperado, el límite es común a todos (red, Wi-Fi o línea) y no de un equipo.`);
+      else add("info", "Diferencia moderada entre equipos", `${lab(hi)} ${f(hi.down, 0)} Mbps y ${lab(lo)} ${f(lo.down, 0)} Mbps. Es una diferencia que puede deberse al equipo o al lugar; repite para saber si se sostiene.`);
+    }
+  }
+  /* 4. latencia, jitter, pérdida, bufferbloat */
+  const L = rs.filter(r => r.lat != null);
+  if (L.length >= 2) {
+    const hi = L.reduce((a, b) => b.lat > a.lat ? b : a), lo = L.reduce((a, b) => b.lat < a.lat ? b : a);
+    if (hi.lat >= 50 && lo.lat >= 50) add("warn", "Latencia alta en todos los equipos", `Todos superan los 50 ms hacia Cloudflare (de ${f(lo.lat, 0)} a ${f(hi.lat, 0)} ms). Al ser común a todos, apunta a la ruta de la operadora o a un router saturado, no a un equipo. Desde Chile suele esperarse bastante menos.`);
+    else if (hi.lat - lo.lat >= 15 && hi.lat >= lo.lat * 1.8) add("info", "La latencia difiere entre equipos", `${lab(hi)} ${f(hi.lat, 0)} ms frente a ${lab(lo)} ${f(lo.lat, 0)} ms. Una diferencia así suele ser local: Wi-Fi débil, interferencia, ahorro de energía del equipo o distinta ubicación.`);
+  } else if (L.length === 1 && L[0].lat >= 80) add("warn", "Latencia alta", `${lab(L[0])} midió ${f(L[0].lat, 0)} ms.`);
+  rs.filter(r => r.jit != null && r.jit >= 15).forEach(r => add("warn", `Jitter alto en ${r.device}`, `${f(r.jit, 1)} ms de jitter (${kindName(r)}). Afecta llamadas y juegos.`));
+  rs.filter(r => r.loss != null && r.loss >= 2).forEach(r => add("bad", `Pérdida de paquetes en ${r.device}`, `${f(r.loss, 1)} % de las solicitudes de latencia no tuvo respuesta (${kindName(r)}).`));
+  const B = rs.filter(r => r.bloat != null && r.bloat >= 100);
+  if (B.length) add("warn", "Latencia muy alta bajo carga", `${B.map(r => `${r.device}: +${f(r.bloat, 0)} ms`).join(" · ")}. Sugiere acumulación de cola en el router (bufferbloat). Si el router permite SQM o QoS, activarlo lo corrige.`);
+  /* 5. cierre */
+  if (!F.some(x => x.lvl === "warn" || x.lvl === "bad")) add("ok", "No se ve un problema claro en estas mediciones", "Ninguna regla de diagnóstico detectó una anomalía. Si la experiencia sigue siendo mala, mide en el momento y el lugar donde ocurre.");
+  add("info", "Alcance de la comparación", "Cada informe es una sola medición, con el estado de la red en ese momento y medida desde el navegador. Un resultado así orienta, pero no prueba: para atribuir una diferencia a una causa, repite cada prueba al menos dos veces y cambia una sola cosa por vez.");
+  return F;
+}
+const ROWS = [
+  ["Dispositivo", r => r.device, null], ["Conexión", r => kindName(r), null], ["Lugar", r => r.place || null, null],
+  ["Bajada (Mbps)", r => r.down, { d: 0, better: "up", rel: true }], ["Bajada respecto del plan (%)", r => r.plan && r.plan.down && r.down != null ? r.down / r.plan.down * 100 : null, { d: 0, better: "up" }],
+  ["Subida (Mbps)", r => r.up, { d: 0, better: "up", rel: true }],
+  ["Latencia, mensajes seguidos (ms)", r => r.lat, { d: 1, better: "down" }], ["Latencia, 1 por segundo (ms)", r => r.latSlow, { d: 1, better: "down" }],
+  ["Latencia al router (ms, solo Mac)", r => r.gwMed, { d: 1, better: "down" }],
+  ["Jitter (ms)", r => r.jit, { d: 1, better: "down" }], ["Pérdida (%)", r => r.loss, { d: 1, better: "down" }], ["Aumento bajo carga (ms)", r => r.bloat, { d: 0, better: "down" }],
+  ["DNS (ms)", r => r.dns, { d: 0, better: "down" }], ["Señal Wi-Fi (dBm, solo Mac)", r => r.rssi, { d: 0, better: "up" }], ["Tasa de enlace media (Mbps, solo Mac)", r => r.txAvg, { d: 0, better: "up" }],
+  ["Canal (solo Mac)", r => r.channel != null ? r.channel : null, null]
+];
+function compareHTML(rs) {
+  const two = rs.length === 2, cell = (v, o) => v == null ? "–" : typeof v === "number" ? fmt(v, o ? o.d : 1) : esc(v);
+  const rows = ROWS.map(([lab, fn, o]) => {
+    const vals = rs.map(fn); if (vals.every(v => v == null)) return "";
+    let dl = "";
+    if (two && o && typeof vals[0] === "number" && typeof vals[1] === "number") {
+      const d = vals[1] - vals[0], sg = d > 0 ? "+" : d < 0 ? "−" : "", mag = Math.abs(d), tiny = mag < Math.max(.05, Math.abs(vals[0]) * .02), cls = tiny || !o.better ? "" : (d > 0) === (o.better === "up") ? "good" : "bad";
+      dl = `<span class="dlt ${cls}">${tiny ? "≈" : sg + fmt(mag, o.d)}${o.rel && vals[0] > 0 && !tiny ? ` (${sg}${fmt(mag / vals[0] * 100, 0)} %)` : ""}</span>`;
+    }
+    return `<tr><td>${esc(lab)}</td>${vals.map(v => `<td class="n">${cell(v, o)}</td>`).join("")}${two ? `<td class="n">${dl}</td>` : ""}</tr>`;
+  }).join("");
+  const F = diagnose(rs), lbl = { ok: "Bien", warn: "Atención", bad: "Problema", info: "Info" };
+  const head = rs.map((r, i) => `<th class="n">${two ? "AB"[i] : i + 1}</th>`).join("") + (two ? '<th class="n">B respecto de A</th>' : "");
+  return `<h2 style="color:var(--text);font-size:20px;margin:0 0 4px">Comparación de informes</h2>
+  <div class="note" style="margin:0 0 10px">${rs.map((r, i) => `<b>${two ? "AB"[i] : i + 1}</b>: ${esc(r.device)} · ${esc(kindName(r))} · ${esc(fmtDate(r.ts))}`).join("<br>")}</div>
+  <h2 style="color:var(--text)">Conclusiones</h2>${F.map(x => `<div class="finding ${x.lvl}"><span class="tag ${x.lvl}">${lbl[x.lvl]}</span><b>${esc(x.t)}</b><p>${esc(x.d)}</p></div>`).join("")}
+  <h2 style="color:var(--text);margin-top:16px">Medidas lado a lado</h2><div class="scroll"><table><thead><tr><th>Medida</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="note">Una diferencia menor al 2 % se marca como «≈». Verde y rojo indican si el cambio es favorable. Las filas «solo Mac» vienen de informes de NetLab para Mac.</p>`;
+}
+let lastCmp = null;
+$("#cmp-go").onclick = () => {
+  const rs = pickedReports().sort((a, b) => a.ts < b.ts ? -1 : 1);
+  if (rs.length < 2) { $("#rep-status").innerHTML = '<span class="bad">Marca al menos dos informes.</span>'; return; }
+  if (rs.length > 6) { $("#rep-status").innerHTML = '<span class="bad">Se pueden comparar hasta seis informes a la vez.</span>'; return; }
+  lastCmp = rs; $("#rep-status").textContent = "";
+  $("#view").innerHTML = `<div class="card">${compareHTML(rs)}<div class="row noprint" style="margin-top:12px"><button class="btn alt" id="cmp-dl">Descargar (HTML)</button><button class="btn alt" id="cmp-print">Imprimir / PDF</button></div></div>`;
+  $("#cmp-dl").onclick = () => saveBlob(`NetLab-comparacion-${stamp()}.html`, new Blob([`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comparación de informes</title><style>${$("#css").textContent}body{max-width:900px}</style></head><body><div class="card">${compareHTML(lastCmp)}</div></body></html>`], { type: "text/html" }));
+  $("#cmp-print").onclick = () => window.print();
+  $("#view").scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+/* ---------- habitaciones y plano ---------- */
+let rooms = store.get("nl_rooms", []), planImg = null, planURL = store.get("nl_planimg", null), pos = null;
+const cv = $("#plan"), ctx = cv.getContext("2d");
+function loadPlan() { if (!planURL) { planImg = null; cv.style.display = "none"; return; } const im = new Image(); im.onload = () => { planImg = im; drawPlan(); }; im.src = planURL; }
+const valOf = (r, m) => m === "down" ? r.down : m === "up" ? r.up : r.lat;
+function colorFor(t) { const a = t < .5 ? [235, 80, 70] : [245, 190, 60], b = t < .5 ? [245, 190, 60] : [60, 200, 110], k = t < .5 ? t * 2 : (t - .5) * 2; return a.map((x, i) => Math.round(x + (b[i] - x) * k)); }
+function norm(vals, m) { const good = vals.filter(v => v != null); if (!good.length) return () => .5; const lo = Math.min(...good), hi = Math.max(...good); return v => v == null ? .5 : hi === lo ? .6 : (m === "lat" ? (hi - v) : (v - lo)) / (hi - lo); }
+function drawPlan() {
+  if (!planImg) { cv.style.display = "none"; return; }
+  cv.style.display = "block";
+  const W = cv.clientWidth || 600, H = Math.round(W * planImg.height / planImg.width), dpr = window.devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px"; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = .55; ctx.drawImage(planImg, 0, 0, W, H); ctx.globalAlpha = 1;
+  const m = $("#metric").value, pts = rooms.filter(r => r.x != null), nf = norm(pts.map(r => valOf(r, m)), m), rad = Math.max(W, H) * .2;
+  pts.forEach(r => { const c = colorFor(nf(valOf(r, m))), x = r.x * W, y = r.y * H, g = ctx.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, `rgba(${c},.75)`); g.addColorStop(1, `rgba(${c},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); });
+  pts.forEach(r => { const v = valOf(r, m), x = r.x * W, y = r.y * H; ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); ctx.stroke(); ctx.font = "600 12px system-ui"; const t = (v == null ? "–" : fmt(v, m === "lat" ? 1 : 0)) + (m === "lat" ? " ms" : ""); ctx.lineWidth = 3; ctx.strokeText(t, x + 8, y - 6); ctx.fillStyle = "#fff"; ctx.fillText(t, x + 8, y - 6); });
+  if (pos) { const x = pos.x * W, y = pos.y * H; ctx.strokeStyle = "#2dd4bf"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.moveTo(x - 17, y); ctx.lineTo(x + 17, y); ctx.moveTo(x, y - 17); ctx.lineTo(x, y + 17); ctx.stroke(); }
+}
+cv.onclick = e => { const b = cv.getBoundingClientRect(); pos = { x: (e.clientX - b.left) / b.width, y: (e.clientY - b.top) / b.height }; drawPlan(); $("#room-status").textContent = "Lugar marcado en el plano. Ahora pulsa «Medir y guardar»."; };
+$("#metric").onchange = () => { drawPlan(); renderRooms(); };
+$("#plan-file").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const im = new Image(), u = URL.createObjectURL(f);
+  im.onload = () => { const k = Math.min(1, 1100 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); planURL = c.toDataURL("image/jpeg", .72); URL.revokeObjectURL(u); if (!store.set("nl_planimg", planURL)) $("#room-status").textContent = "El plano es demasiado grande para guardarlo; se usará solo en esta sesión."; loadPlan(); };
+  im.onerror = () => { $("#room-status").textContent = "No se pudo leer esa imagen."; };
+  im.src = u;
+};
+$("#plan-clear").onclick = () => { planURL = null; planImg = null; pos = null; store.set("nl_planimg", null); $("#plan-file").value = ""; drawPlan(); };
+window.addEventListener("resize", () => { if ($("#s-rooms").classList.contains("on")) drawPlan(); });
+function renderRooms() {
+  const m = $("#metric").value, box = $("#room-list");
+  if (!rooms.length) { box.innerHTML = '<div class="note">Aún no hay mediciones.</div>'; return; }
+  const nf = norm(rooms.map(r => valOf(r, m)), m);
+  box.innerHTML = `<table><thead><tr><th>Lugar</th><th class="n">Bajada</th><th class="n">Subida</th><th class="n">Lat.</th><th></th></tr></thead><tbody>${rooms.map((r, i) => `<tr><td><span class="pill" style="background:rgb(${colorFor(nf(valOf(r, m)))})"></span>${esc(r.name)}</td><td class="n">${r.down == null ? "–" : fmt(r.down, 0)}</td><td class="n">${r.up == null ? "–" : fmt(r.up, 0)}</td><td class="n">${r.lat == null ? "–" : fmt(r.lat, 1)}</td><td><button class="x" data-i="${i}" aria-label="Borrar">✕</button></td></tr>`).join("")}</tbody></table><div class="note">Velocidades en Mbps; latencia en ms.</div>`;
+  $$("#room-list .x").forEach(b => b.onclick = () => { rooms.splice(+b.dataset.i, 1); store.set("nl_rooms", rooms); renderRooms(); drawPlan(); });
+}
+$("#room-go").onclick = async () => {
+  if (running) return; running = true; const btn = $("#room-go"); btn.disabled = true; await keepAwake(true);
+  const name = $("#room-name").value.trim() || ("Punto " + (rooms.length + 1)), st = $("#room-status"), bar = f => $("#room-bar").style.width = f * 100 + "%";
+  try {
+    st.textContent = "Midiendo latencia…"; bar(.05);
+    const lat = await latency(20, 0); bar(.2);
+    if (!lat.ok) throw new Error("sin acceso a Internet desde el navegador");
+    st.textContent = "Midiendo bajada…"; const d = await throughput("down", 6, 4, 25e6, f => bar(.2 + .5 * f));
+    st.textContent = "Midiendo subida…"; const u = await throughput("up", 4, 4, 2e6, f => bar(.7 + .3 * f));
+    rooms.push({ id: uid(), name, ts: new Date().toISOString(), x: pos ? pos.x : null, y: pos ? pos.y : null, lat: lat.ok ? lat.med : null, down: d.mbps, up: u.mbps, device: $("#f-dev").value.trim() || guessDevice() });
+    store.set("nl_rooms", rooms); $("#room-name").value = ""; pos = null; renderRooms(); drawPlan(); st.textContent = `Guardado: ${name}.`;
+  } catch (e) { st.textContent = "No se pudo medir: " + (e.message || e); }
+  bar(1); await keepAwake(false); running = false; btn.disabled = false;
+};
+$("#room-clear").onclick = () => { if (!rooms.length || !confirm("¿Borrar todas las mediciones guardadas?")) return; rooms = []; store.set("nl_rooms", rooms); renderRooms(); drawPlan(); };
+$("#room-csv").onclick = () => { if (!rooms.length) return; const rows = ["lugar,fecha,dispositivo,bajada_mbps,subida_mbps,latencia_ms"]; rooms.forEach(r => rows.push(`"${String(r.name).replace(/"/g, '""')}",${r.ts},"${String(r.device || "").replace(/"/g, '""')}",${r.down ?? ""},${r.up ?? ""},${r.lat ?? ""}`)); saveBlob("NetLab-habitaciones.csv", new Blob([rows.join("\n")], { type: "text/csv" })); };
+$("#room-png").onclick = () => { if (!planImg) { alert("Primero elige un plano."); return; } cv.toBlob(b => saveBlob("NetLab-mapa.png", b)); };
+$("#proj-save").onclick = () => { if (!rooms.length && !planURL) { $("#room-status").textContent = "No hay nada que guardar todavía."; return; } saveBlob(`NetLab-proyecto-${stamp()}.json`, new Blob([JSON.stringify({ netlab: "project", v: 1, plan: planURL, rooms })], { type: "application/json" })); };
+$("#proj-open").onclick = () => $("#proj-file").click();
+$("#proj-file").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const o = JSON.parse(await f.text()); if (o.netlab !== "project" || !Array.isArray(o.rooms)) throw new Error("no es un proyecto de NetLab");
+    if ((rooms.length || planURL) && !confirm("Se reemplazarán el plano y las mediciones actuales por las del archivo. ¿Continuar?")) return;
+    rooms = o.rooms; planURL = typeof o.plan === "string" && o.plan.startsWith("data:image/") ? o.plan : null; store.set("nl_rooms", rooms); store.set("nl_planimg", planURL); loadPlan(); renderRooms(); drawPlan(); $("#room-status").textContent = "Proyecto abierto.";
+  } catch (err) { $("#room-status").textContent = "No se pudo abrir: " + err.message; }
+};
+
+/* ---------- inicio ---------- */
+loadPlan(); renderRooms(); renderReports();
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => { });
+</script>
+</body>
+</html>
